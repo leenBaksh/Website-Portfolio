@@ -1,0 +1,6 @@
+{
+  "name": "Sandleen Waseem Portfolio",
+  "description": "A futuristic personal portfolio for Sandleen Waseem, an AI-Powered Full-Stack Developer & Creative Professional. Features a bento-grid, sleek vertical experience timeline, 3D Canvas visual node field, and an interactive Gemini custom AI double assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
