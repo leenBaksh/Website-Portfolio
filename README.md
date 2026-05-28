@@ -1,20 +1,55 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+---
+title: Sandleen Waseem Portfolio
+emoji: 💻
+colorFrom: cyan
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
 
-# Run and deploy your AI Studio app
+# Sandleen Waseem - Interactive AI Portfolio Hub
 
-This contains everything you need to run your app locally.
+An ultra-modern, high-performance interactive 3D engineering portfolio showcasing **Agentic AI systems, automated developer workflows, and full-stack cloud applications**. Equipped with a custom-engineered **AI Digital Twin chatbot** backed by the Gemini Pro framework, designed to converse with recruiters and collaborators dynamically.
 
-View your app in AI Studio: https://ai.studio/apps/d95de401-5660-4a69-bb49-b916ac727e9d
+## 🚀 Hugging Face Space Quick Start
 
-## Run Locally
+This space is pre-configured to build, run, and host instantly on **Hugging Face Spaces** using the integrated `Dockerfile`.
 
-**Prerequisites:**  Node.js
+### 1. Requirements & Setup
+The port binds dynamically based on Hugging Face's internal proxy config (targeting port `7860`).
 
+### 2. Add Secrets
+To activate the interactive AI Chat proxy (Sandleen's digital twin), make sure to configure your API keys in the **Hugging Face Space Settings**:
+* Go to your Space **Settings** page.
+* Add a new **Variables and secrets** entry:
+  * **Secret Key**: `GEMINI_API_KEY`
+  * **Value**: *[Your personal Google Gemini API Key]*
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+---
+
+## 🛠️ Local Development
+
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+### 2. Configure Environment Local
+Create a `.env` file at the root:
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+PORT=3000
+```
+
+### 3. Run Development Server
+```bash
+npm run dev
+```
+
+### 4. Build and Run Production
+```bash
+npm run build
+npm run start
+```

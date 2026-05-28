@@ -1,12 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Sliders, Cpu, Shield, HelpCircle, Activity, Globe, Compass, Zap } from "lucide-react";
+import { cyberAudio } from "../utils/audio";
 
 interface ThreeCenterpieceProps {
   initialMode?: "sphere" | "robot";
+  cyanColor?: string;
+  purpleColor?: string;
 }
 
-export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenterpieceProps) {
+export default function ThreeCenterpiece({ 
+  initialMode = "sphere",
+  cyanColor = "#02e5c8",
+  purpleColor = "#9d4edd"
+}: ThreeCenterpieceProps) {
+  const cyanHexNum = Number(cyanColor.replace("#", "0x"));
+  const purpleHexNum = Number(purpleColor.replace("#", "0x"));
+
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mode, setMode] = useState<"sphere" | "robot">(initialMode);
@@ -49,11 +59,11 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
     const ambientLight = new THREE.AmbientLight(0x0f172a, 3.0);
     scene.add(ambientLight);
 
-    const cyanLight = new THREE.DirectionalLight(0x00f0ff, 4.0);
+    const cyanLight = new THREE.DirectionalLight(cyanHexNum, 4.0);
     cyanLight.position.set(5, 5, 5);
     scene.add(cyanLight);
 
-    const purpleLight = new THREE.DirectionalLight(0xb026ff, 3.5);
+    const purpleLight = new THREE.DirectionalLight(purpleHexNum, 3.5);
     purpleLight.position.set(-5, -5, 2);
     scene.add(purpleLight);
 
@@ -63,7 +73,7 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
     // Core Wireframe Sphere
     const sphereGeo = new THREE.IcosahedronGeometry(1.8, 2);
     const sphereMat = new THREE.MeshBasicMaterial({
-      color: 0x00f0ff,
+      color: cyanHexNum,
       wireframe: true,
       transparent: true,
       opacity: 0.15,
@@ -72,8 +82,8 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
     sphereGroup.add(coreSphere);
 
     // Outer Latitudinal Rings
-    const ringMat1 = new THREE.LineBasicMaterial({ color: 0xb026ff, transparent: true, opacity: 0.35 });
-    const ringMat2 = new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.25 });
+    const ringMat1 = new THREE.LineBasicMaterial({ color: purpleHexNum, transparent: true, opacity: 0.35 });
+    const ringMat2 = new THREE.LineBasicMaterial({ color: cyanHexNum, transparent: true, opacity: 0.25 });
     
     const ringGeo1 = new THREE.RingGeometry(2.3, 2.33, 64);
     const ring1 = new THREE.LineLoop(ringGeo1, ringMat1);
@@ -99,8 +109,8 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
     const satelliteAxes: THREE.Vector3[] = [];
 
     const satGeo = new THREE.SphereGeometry(0.06, 8, 8);
-    const cyanSatMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-    const purpleSatMat = new THREE.MeshBasicMaterial({ color: 0xb026ff });
+    const cyanSatMat = new THREE.MeshBasicMaterial({ color: cyanHexNum });
+    const purpleSatMat = new THREE.MeshBasicMaterial({ color: purpleHexNum });
 
     for (let i = 0; i < satelliteCount; i++) {
       const sat = new THREE.Mesh(satGeo, i % 2 === 0 ? cyanSatMat : purpleSatMat);
@@ -181,7 +191,7 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
 
     // Glowing Base Center ring
     const ringGeo = new THREE.TorusGeometry(0.9, 0.06, 8, 32);
-    const neonCyanMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+    const neonCyanMat = new THREE.MeshBasicMaterial({ color: cyanHexNum });
     const baseGlowRing = new THREE.Mesh(ringGeo, neonCyanMat);
     baseGlowRing.rotation.x = Math.PI / 2;
     baseGlowRing.position.y = 0.21;
@@ -197,7 +207,7 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
     shoulderGroup.add(shoulderPivot);
 
     // Joint glowing core
-    const neonPurpleMat = new THREE.MeshBasicMaterial({ color: 0xb026ff });
+    const neonPurpleMat = new THREE.MeshBasicMaterial({ color: purpleHexNum });
     const shoulderCore = new THREE.Mesh(new THREE.SphereGeometry(0.38, 12, 12), neonPurpleMat);
     shoulderGroup.add(shoulderCore);
 
@@ -299,7 +309,7 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
       new THREE.Vector3(0, 10, 0)
     ]);
     const laserLineMat = new THREE.LineBasicMaterial({
-      color: 0x00f0ff,
+      color: cyanHexNum,
       transparent: true,
       opacity: 0.5,
     });
@@ -547,10 +557,11 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
 
       renderer.dispose();
     };
-  }, [mode, manualControl, baseRot, shoulderRot, elbowRot, wristRot]);
+  }, [mode, manualControl, baseRot, shoulderRot, elbowRot, wristRot, cyanColor, purpleColor]);
 
   // Handle Mode Change transitions
   const handleModeChange = (newMode: "sphere" | "robot") => {
+    cyberAudio.playTransition();
     setMode(newMode);
   };
 
@@ -627,7 +638,10 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
           <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2">
             <span className="text-gray-300 font-bold uppercase tracking-wider">Actuator Override</span>
             <button
-              onClick={() => setManualControl(!manualControl)}
+              onClick={() => {
+                cyberAudio.playClick();
+                setManualControl(!manualControl);
+              }}
               className={`px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-extrabold transition-all border ${
                 manualControl 
                   ? "bg-purple-950 text-purple-glow border-purple-glow/40" 
@@ -650,7 +664,10 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
                   min="-90"
                   max="90"
                   value={baseRot}
-                  onChange={(e) => setBaseRot(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    cyberAudio.playTick();
+                    setBaseRot(parseInt(e.target.value));
+                  }}
                   className="w-full accent-cyan-glow"
                 />
               </div>
@@ -665,7 +682,10 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
                   min="10"
                   max="120"
                   value={shoulderRot}
-                  onChange={(e) => setShoulderRot(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    cyberAudio.playTick();
+                    setShoulderRot(parseInt(e.target.value));
+                  }}
                   className="w-full accent-purple-glow"
                 />
               </div>
@@ -680,7 +700,10 @@ export default function ThreeCenterpiece({ initialMode = "sphere" }: ThreeCenter
                   min="-100"
                   max="20"
                   value={elbowRot}
-                  onChange={(e) => setElbowRot(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    cyberAudio.playTick();
+                    setElbowRot(parseInt(e.target.value));
+                  }}
                   className="w-full accent-cyan-glow"
                 />
               </div>

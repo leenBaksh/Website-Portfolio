@@ -33,7 +33,10 @@ import {
   User,
   Menu,
   X,
-  Plus
+  Plus,
+  Volume2,
+  VolumeX,
+  Download
 } from "lucide-react";
 import { ChatMessage, Project, ExperienceEvent, SkillCategory } from "./types";
 import { AnimatePresence, motion } from "motion/react";
@@ -41,6 +44,12 @@ import ThreeCenterpiece from "./components/ThreeCenterpiece";
 import FeaturedProjects from "./components/FeaturedProjects";
 import TechStackBento from "./components/TechStackBento";
 import MobileHeroSvg from "./components/MobileHeroSvg";
+import ContactSection from "./components/ContactSection";
+import { cyberAudio } from "./utils/audio";
+import CustomCursor from "./components/CustomCursor";
+import TypingIndicator from "./components/TypingIndicator";
+import FloatingTerminal from "./components/FloatingTerminal";
+import { addSystemLog } from "./utils/logger";
 
 // Typewriter hook for clean interactive console writing
 function useTypewriter(words: string[], speed: number = 75, delay: number = 2000) {
@@ -79,12 +88,145 @@ function useTypewriter(words: string[], speed: number = 75, delay: number = 2000
   return currentText;
 }
 
+// Global cyber-futuristic page-transition scroll-triggered staggered entry variants
+const sectionFadeInVariants = {
+  hidden: { opacity: 0, y: 35 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      ease: [0.16, 1, 0.3, 1] as any, // cinematic smooth cubic-bezier curve
+      staggerChildren: 0.12,
+      delayChildren: 0.05
+    }
+  }
+};
+
+const sectionItemFadeInVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: [0.16, 1, 0.3, 1] as any
+    }
+  }
+};
+
+export interface ThemeConfig {
+  id: string;
+  name: string;
+  cyanGlow: string;
+  purpleGlow: string;
+  darkSurface: string;
+  darkBg: string;
+  accentClass: string;
+}
+
+export const THEMES: ThemeConfig[] = [
+  {
+    id: "cyberpunk",
+    name: "CYBER PROTOCOL",
+    cyanGlow: "#02e5c8",
+    purpleGlow: "#9d4edd",
+    darkSurface: "#0c0a13",
+    darkBg: "#060509",
+    accentClass: "from-[#02e5c8]/20 to-[#9d4edd]/20",
+  },
+  {
+    id: "matrix",
+    name: "SUB-GRID TERMINAL",
+    cyanGlow: "#39ff14",
+    purpleGlow: "#008f11",
+    darkSurface: "#010802",
+    darkBg: "#000300",
+    accentClass: "from-[#39ff14]/20 to-[#008f11]/20",
+  },
+  {
+    id: "crimson",
+    name: "ALERT PROTOCOL",
+    cyanGlow: "#ff0055",
+    purpleGlow: "#ff5e00",
+    darkSurface: "#0f0105",
+    darkBg: "#060002",
+    accentClass: "from-[#ff0055]/20 to-[#ff5e00]/20",
+  },
+  {
+    id: "amber",
+    name: "PIP-BOY VINTAGE",
+    cyanGlow: "#ffb000",
+    purpleGlow: "#ff7700",
+    darkSurface: "#120a01",
+    darkBg: "#050300",
+    accentClass: "from-[#ffb000]/20 to-[#ff7700]/15",
+  },
+  {
+    id: "cobalt",
+    name: "GALACTIC HORIZON",
+    cyanGlow: "#0066ff",
+    purpleGlow: "#00f0ff",
+    darkSurface: "#020716",
+    darkBg: "#000208",
+    accentClass: "from-[#0066ff]/20 to-[#00f0ff]/20",
+  }
+];
+
 export default function App() {
   // Navigation & Interactive states
   const [activeSection, setActiveSection] = useState("hero");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string | null>("robot-sim");
   const [isMobile, setIsMobile] = useState(false);
+  const [isAudioMuted, setIsAudioMuted] = useState(() => cyberAudio.getMutedState());
+
+  // Dynamic color theme management
+  const [currentTheme, setCurrentTheme] = useState<ThemeConfig>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("portfolio-theme");
+      const matched = THEMES.find((t) => t.id === saved);
+      return matched || THEMES[0];
+    }
+    return THEMES[0];
+  });
+
+  useEffect(() => {
+    // Apply theme properties to CSS custom variables on mount & when theme changes
+    const root = document.documentElement;
+    root.style.setProperty("--cyan-glow", currentTheme.cyanGlow);
+    root.style.setProperty("--purple-glow", currentTheme.purpleGlow);
+    root.style.setProperty("--dark-surface", currentTheme.darkSurface);
+    root.style.setProperty("--dark-bg", currentTheme.darkBg);
+    root.setAttribute("data-theme", currentTheme.id);
+  }, [currentTheme]);
+
+  const handleSetTheme = (theme: ThemeConfig) => {
+    cyberAudio.playConfirm();
+    setCurrentTheme(theme);
+    localStorage.setItem("portfolio-theme", theme.id);
+    addSystemLog(`THEME: Set display configuration payload to [${theme.name}]`, "success");
+  };
+
+  const handleToggleAudio = () => {
+    const nextMuted = cyberAudio.toggleMute();
+    setIsAudioMuted(nextMuted);
+  };
+
+  // Play a gentle cyber boot chirp when user first interacts with the application
+  useEffect(() => {
+    const playInitialBoot = () => {
+      cyberAudio.playBoot();
+      window.removeEventListener("click", playInitialBoot);
+      window.removeEventListener("keydown", playInitialBoot);
+    };
+    window.addEventListener("click", playInitialBoot);
+    window.addEventListener("keydown", playInitialBoot);
+    return () => {
+      window.removeEventListener("click", playInitialBoot);
+      window.removeEventListener("keydown", playInitialBoot);
+    };
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -94,6 +236,42 @@ export default function App() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Scroll observer to update activeSection highlighting in navigation bar
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ["trix", "hero", "projects", "experience", "skills", "contact"];
+      const scrollPosition = window.scrollY + 180; // offset for sticky header
+
+      for (const sectionId of sections) {
+        const el = document.getElementById(sectionId);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            setActiveSection(sectionId);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    // Trigger initial calculation
+    setTimeout(handleScroll, 100);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Telemetry log for viewport navigation
+  const previousSection = useRef<string | null>(null);
+  useEffect(() => {
+    if (activeSection && activeSection !== previousSection.current) {
+      if (previousSection.current !== null) {
+        addSystemLog(`VIEWPORT: Transitioned focus to [${activeSection.toUpperCase()}]`, "info");
+      }
+      previousSection.current = activeSection;
+    }
+  }, [activeSection]);
   
   // Custom Project Simulations States
   // 1. Robotic Joint simulation
@@ -129,7 +307,7 @@ export default function App() {
     {
       id: "init",
       sender: "ai",
-      text: "Hello! I am Sandleen's AI digital twin assistant, trained securely on his credentials, academic work, and career milestones. Ask me about system designs, ROS2 telemetry, or project architectures!",
+      text: "Hello! I am Sandleen's AI digital twin assistant, trained securely on her credentials, academic work, and career milestones. Ask me about full-stack web engineering, n8n automations, design systems, or client projects!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -141,9 +319,9 @@ export default function App() {
   // Typewriter headings
   const textTitle = useTypewriter([
     "AI-Powered Full-Stack Developer",
-    "Robotics Research Engineer",
-    "Creative Tech Innovator",
-    "Automation Architect"
+    "Agentic Automation Engineer",
+    "Creative Designer & Brand Architect",
+    "Automation & DevOps Architect"
   ], 60, 2500);
 
   // Particle background Canvas parameters
@@ -152,6 +330,13 @@ export default function App() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    // Detect mobile or lower hardware properties to prioritize scroll fluidity
+    const isMobileOrLowEnd = 
+      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      window.innerWidth < 768 ||
+      // @ts-ignore
+      (typeof navigator !== 'undefined' && ((navigator.deviceMemory && navigator.deviceMemory < 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)));
 
     let animationFrameId: number;
     let width = (canvas.width = canvas.parentElement?.clientWidth || window.innerWidth);
@@ -167,7 +352,8 @@ export default function App() {
       size: number;
     }[] = [];
 
-    const numParticles = 45;
+    // Scale down node complexity on restricted devices to save O(N^2) connection scans
+    const numParticles = isMobileOrLowEnd ? 18 : 45;
     for (let i = 0; i < numParticles; i++) {
       particles.push({
         x: Math.random() * width - width / 2,
@@ -191,7 +377,10 @@ export default function App() {
       targetMouseY = e.clientY - rect.top - rect.height / 2;
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
+    // Skip heavy mouse event listener on mobile to avoid constant paint triggers
+    if (!isMobileOrLowEnd) {
+      window.addEventListener("mousemove", handleMouseMove);
+    }
 
     const handleResize = () => {
       width = canvas.width = canvas.parentElement?.clientWidth || window.innerWidth;
@@ -199,7 +388,24 @@ export default function App() {
     };
     window.addEventListener("resize", handleResize);
 
+    // Dynamic framerate throttling variables
+    const fpsLimit = isMobileOrLowEnd ? 30 : 60;
+    const frameInterval = 1000 / fpsLimit;
+    let lastFrameTime = performance.now();
+
     const draw = () => {
+      const now = performance.now();
+      const delta = now - lastFrameTime;
+
+      // Throttle the loop to target frame interval
+      if (delta < frameInterval) {
+        animationFrameId = requestAnimationFrame(draw);
+        return;
+      }
+      
+      // Align last frame time nicely
+      lastFrameTime = now - (delta % frameInterval);
+
       ctx.clearRect(0, 0, width, height);
 
       // Smooth mouse damping
@@ -454,13 +660,94 @@ export default function App() {
     }
   };
 
+  const handleDownloadCV = () => {
+    cyberAudio.playConfirm();
+    addSystemLog("ACTION: Reconstructing resume payload block...", "action");
+    
+    // Create simple content for the placeholder PDF file
+    const content = `%PDF-1.4
+%
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595.28 841.89] /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 400 >>
+stream
+BT
+/F1 18 Tf
+50 780 Td
+(SANDLEEN WASEEM - AI ENGINEER & FULL-STACK DEVELOPER) Tj
+/F1 10 Tf
+0 -30 Td
+(Email: sandleenbakshi@gmail.com | Portfolio CV) Tj
+0 -30 Td
+(--------------------------------------------------------------------------------) Tj
+0 -20 Td
+(PROFESSIONAL PROFILE:) Tj
+0 -15 Td
+(Focused heavily on Full-stack engineering, agentic AI systems design, and workflow automation.) Tj
+0 -15 Td
+(Experienced with React, Node.js, Express, TypeScript, Vite, Python, and Google GenAI SDKs.) Tj
+0 -30 Td
+(EDUCATION & VOLUNTEERING Initiatives:) Tj
+0 -15 Td
+(- Agentic AI Engineering - Governor Sindh Initiative (Quarter 4 spec-driven work)) Tj
+0 -15 Td
+(- Web Development & Freelancing - Bano Qabil IT Initiative) Tj
+0 -15 Td
+(- Corporate Pitch Presentation Design (CIT)) Tj
+0 -40 Td
+(Official digital signature validated.) Tj
+0 -15 Td
+(Download verified via AI Studio preview container gateway.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000074 00000 n 
+0000000133 00000 n 
+0000000271 00000 n 
+0000000343 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+820
+%%EOF`;
+
+    const blob = new Blob([content], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Sandleen_Waseem_CV.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    addSystemLog("SECURE: Sandleen_Waseem_CV.pdf stream downloaded successfully.", "success");
+  };
+
   // AI Twin query streaming
   const handleChatSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!userChatMsg.trim()) return;
 
+    cyberAudio.playConfirm();
     const userMsgText = userChatMsg;
     setUserChatMsg("");
+
+    addSystemLog(`CHAT_QUERY: Dispatching user query: "${userMsgText.slice(0, 48)}${userMsgText.length > 48 ? "..." : ""}"`, "action");
 
     const newMsg: ChatMessage = {
       id: Math.random().toString(),
@@ -485,6 +772,8 @@ export default function App() {
       const data = await response.json();
       setIsAiTyping(false);
 
+      addSystemLog("CHAT_RESPONSE: Gemini AI core transmission successful.", "success");
+
       setChatMessages((prev) => [
         ...prev,
         {
@@ -498,19 +787,21 @@ export default function App() {
       console.error("Failed to query portfolio AI core:", error);
       setIsAiTyping(false);
       
+      addSystemLog("CHAT_RESPONSE: Network fallback activated. Generating simulator reply.", "warning");
+
       // Local robust simulation response if server keys are completely offline
       setTimeout(() => {
-        let simulatedReply = "As Sandleen Waseem's interactive model matrix, I am currently navigating in standalone secure sandbox. Sandleen is an expert developer with advanced work in machine learning pipelines, full-stack React systems, ROS2 lidar architectures, and highly polished cryptographic salting workflows. Ask me anything about his credentials and explore his live project simulations on this page!";
+        let simulatedReply = "As Sandleen Waseem's interactive model matrix, I am currently navigating in standalone secure sandbox. Sandleen is an expert developer with advanced work in AI & Agentic systems, full-stack Next.js/React development, FastAPI backends, and creative branding and presentation layouts. Ask me anything about her credentials and explore her live bento matrix on this page!";
         
         const lowered = userMsgText.toLowerCase();
-        if (lowered.includes("ros2") || lowered.includes("robot") || lowered.includes("kinematics")) {
-          simulatedReply = "Sandleen's robotics background includes research and implementation at Cyberdyne Labs and Quantum Automations. He models joint kinematics, integrates ROS2 navigation stacks, handles feedback sensors, and designs real-time full-stack canvas controls for robotic telemetry diagnostics.";
+        if (lowered.includes("ai") || lowered.includes("agent") || lowered.includes("gemini") || lowered.includes("workflow")) {
+          simulatedReply = "Sandleen's AI automation and agentic background includes orchestrating custom n8n pipelines, building systems via OpenAI Agents SDK, using the Gemini API, and spec-driven development. Her automations have successfully reduced manual workflows by up to 60%.";
         } else if (lowered.includes("react") || lowered.includes("typescript") || lowered.includes("next")) {
-          simulatedReply = "In full-stack architectures, Sandleen structures optimized TypeScript systems. He leverages React, Nest.js, Node, Express, Tailwind, and custom canvases, reducing diagnostic rendering latency by up to 42% for intricate raw signals.";
-        } else if (lowered.includes("encryption") || lowered.includes("hexarmor") || lowered.includes("cryptography")) {
-          simulatedReply = "HexArmor is Sandleen's customizable encryption node concept. It leverages client-side secure algorithms, sharded transposition, modular arithmetic, and interactive SVG indicators to represent structural cryptographic data changes.";
-        } else if (lowered.includes("contact") || lowered.includes("hire") || lowered.includes("email")) {
-          simulatedReply = "You can easily contact Sandleen Waseem via email at sandleenbakshi@gmail.com. We can also schedule a consultation directly through the options dashboard!";
+          simulatedReply = "In full-stack, Sandleen is highly proficient with Next.js 15, React, TypeScript, Tailwind CSS, ShadCN, and Aceternity UI. She builds modular, interactive, and responsive web platforms with absolute aesthetic clarity.";
+        } else if (lowered.includes("design") || lowered.includes("canva") || lowered.includes("presentation")) {
+          simulatedReply = "Sandleen has over 3 years of remote design experience. She is expert in Canva, Adobe Photoshop, Illustrator, and presentation decks (Keynote, Prezi, PowerPoint) creating pitch decks and custom digital merchandise assets.";
+        } else if (lowered.includes("contact") || lowered.includes("hire") || lowered.includes("email") || lowered.includes("phone")) {
+          simulatedReply = "You can easily contact Sandleen Waseem via email at sandleenbakshi@gmail.com, or dial her at +923103871019. You can also send a secure signal message in the Contact Form below!";
         }
 
         setChatMessages((prev) => [
@@ -522,12 +813,15 @@ export default function App() {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         ]);
+        addSystemLog("CHAT_RESPONSE: Simulator output completed.", "success");
       }, 700);
     }
   };
 
   // Quick prompt triggers
   const executeQuickPrompt = (promptText: string) => {
+    cyberAudio.playTick();
+    addSystemLog(`CHAT_INTERACT: Selected prompt template: "${promptText.slice(0, 36)}..."`, "info");
     setUserChatMsg(promptText);
     setTimeout(() => {
       // Auto submit
@@ -669,48 +963,205 @@ export default function App() {
   return (
     <div id="root-container" className="min-h-screen cyber-bg text-gray-100 font-sans selection:bg-cyan-glow/30 selection:text-white relative overflow-x-hidden">
       
+      {/* Dynamic Ambient Background Glow spheres */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div 
+          className="absolute top-[8%] left-[2%] w-[40vw] h-[40vw] rounded-full blur-[160px] opacity-[0.06] transition-all duration-1000 animate-pulse"
+          style={{ backgroundColor: currentTheme.cyanGlow, animationDuration: "10s" }}
+        />
+        <div 
+          className="absolute top-[38%] right-[2%] w-[35vw] h-[35vw] rounded-full blur-[140px] opacity-[0.05] transition-all duration-1000 animate-pulse"
+          style={{ backgroundColor: currentTheme.purpleGlow, animationDuration: "14s" }}
+        />
+        <div 
+          className="absolute bottom-[22%] left-[8%] w-[30vw] h-[30vw] rounded-full blur-[130px] opacity-[0.04] transition-all duration-1000"
+          style={{ backgroundColor: currentTheme.cyanGlow }}
+        />
+      </div>
+
+      {/* Custom cyberpunk targeting custom cursor */}
+      <CustomCursor />
+
       {/* Sleek Header */}
       <header id="main-header" className="sticky top-0 z-50 w-full bg-dark-bg/85 backdrop-blur-md border-b border-white/5 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <span className="font-display font-bold text-xl tracking-wider text-white">
-              SANDLEEN<span className="text-cyan-glow text-lg">.</span>WASEEM
-            </span>
-            <span className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-cyan-glow/10 border border-cyan-glow/20 text-cyan-glow uppercase tracking-widest">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-glow animate-pulse"></span>
-              <span>Developer Matrix</span>
-            </span>
-          </div>
+          {/* Custom Styled Brand Logo for SANDLEEN.WASEEM */}
+          <a href="#hero" className="flex items-center space-x-2 sm:space-x-3 group cursor-pointer select-none">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-zinc-950/80 border border-white/10 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-cyan-glow/60 group-hover:shadow-[0_0_15px_rgba(0,240,255,0.3)] shrink-0">
+              <div className="absolute inset-0 bg-gradient-to-tr from-cyan-glow/10 via-transparent to-purple-glow/15 opacity-50 group-hover:opacity-150 transition-opacity duration-300" />
+              
+              {/* Dynamic Hexagon Logo SVG */}
+              <svg className="w-5.5 h-5.5 sm:w-7 sm:h-7 text-gray-400 group-hover:text-cyan-glow transition-all duration-300 transform group-hover:rotate-12" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Hexagonal Outer boundary */}
+                <path d="M50 5 L89 27.5 L89 72.5 L50 95 L11 72.5 L11 27.5 Z" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 group-hover:opacity-100 transition-opacity duration-300"/>
+                {/* Symbol S & W curves */}
+                <path d="M35 30 L65 30 L35 70 L65 70" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-glow opacity-80 group-hover:opacity-100 group-hover:text-cyan-glow transition-all duration-300"/>
+                {/* Pulsing center node of the engine */}
+                <circle cx="50" cy="50" r="5" fill="#00f0ff" className="animate-ping" style={{ transformOrigin: 'center' }} />
+                <circle cx="50" cy="50" r="4" fill="#00f0ff" />
+              </svg>
+            </div>
+            
+            <div className="flex flex-col">
+              <div className="flex items-center space-x-1">
+                <span className="font-display font-black text-xs sm:text-sm tracking-wider text-white group-hover:text-cyan-glow transition-all duration-300">
+                  SANDLEEN
+                </span>
+                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-cyan-glow animate-pulse"></span>
+                <span className="font-mono font-medium text-[10px] sm:text-xs tracking-widest text-zinc-400 group-hover:text-white transition-all duration-300">
+                  WASEEM
+                </span>
+              </div>
+              <span className="text-[6.5px] sm:text-[7.5px] font-mono text-zinc-500 tracking-widest uppercase mt-0.5 group-hover:text-purple-glow/80 transition-colors">
+                AGENTIC PORTFOLIO CORE
+              </span>
+            </div>
+          </a>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8 font-mono text-sm">
-            <a href="#hero" className="text-gray-400 hover:text-white hover:border-b hover:border-cyan-glow/30 transition-all uppercase py-1">System</a>
-            <a href="#projects" className="text-gray-400 hover:text-white hover:border-b hover:border-cyan-glow/30 transition-all uppercase py-1">Simulated-Work</a>
-            <a href="#experience" className="text-gray-400 hover:text-white hover:border-b hover:border-cyan-glow/30 transition-all uppercase py-1">Timeline</a>
-            <a href="#skills" className="text-gray-400 hover:text-white hover:border-b hover:border-cyan-glow/30 transition-all uppercase py-1">Capabilities</a>
+          {/* Desktop Navigation - Upgraded Alignment and Active State highlighting */}
+          <nav className="hidden lg:flex items-center space-x-4 xl:space-x-8 font-mono text-xs font-bold uppercase tracking-wider">
+            <a 
+              href="#trix" 
+              onClick={() => cyberAudio.playTransition()}
+              className={`py-1 border-b transition-all duration-300 ${activeSection === "trix" ? "text-cyan-glow border-cyan-glow" : "text-gray-400 border-transparent hover:text-white"}`}
+            >
+              trix
+            </a>
+            <a 
+              href="#hero" 
+              onClick={() => cyberAudio.playTransition()}
+              className={`py-1 border-b transition-all duration-300 ${activeSection === "hero" ? "text-cyan-glow border-cyan-glow" : "text-gray-400 border-transparent hover:text-white"}`}
+            >
+              System
+            </a>
+            <a 
+              href="#projects" 
+              onClick={() => cyberAudio.playTransition()}
+              className={`py-1 border-b transition-all duration-300 ${activeSection === "projects" ? "text-cyan-glow border-cyan-glow" : "text-gray-400 border-transparent hover:text-white"}`}
+            >
+              Simulated-Work
+            </a>
+            <a 
+              href="#experience" 
+              onClick={() => cyberAudio.playTransition()}
+              className={`py-1 border-b transition-all duration-300 ${activeSection === "experience" ? "text-cyan-glow border-cyan-glow" : "text-gray-400 border-transparent hover:text-white"}`}
+            >
+              Timeline
+            </a>
+            <a 
+              href="#skills" 
+              onClick={() => cyberAudio.playTransition()}
+              className={`py-1 border-b transition-all duration-300 ${activeSection === "skills" ? "text-cyan-glow border-cyan-glow" : "text-gray-400 border-transparent hover:text-white"}`}
+            >
+              Capabilities
+            </a>
+            <a 
+              href="#contact" 
+              onClick={() => cyberAudio.playTransition()}
+              className={`py-1 border-b transition-all duration-300 ${activeSection === "contact" ? "text-cyan-glow border-cyan-glow" : "text-gray-400 border-transparent hover:text-white"}`}
+            >
+              Contact
+            </a>
           </nav>
 
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden lg:flex items-center space-x-3 xl:space-x-4">
+            {/* Cyber Matrix Theme Controller */}
+            <div className="relative group">
+              <button
+                className="p-2.5 rounded-lg border border-cyan-glow/20 bg-cyan-glow/5 text-cyan-glow hover:text-white hover:border-cyan-glow hover:shadow-[0_0_12px_var(--cyan-glow)] font-mono text-xs transition-all duration-300 flex items-center space-x-2.5 cursor-pointer"
+                title="Cycles display color matrix protocol"
+              >
+                <Sliders size={14} className="animate-pulse" />
+                <span className="hidden xl:inline text-[10px] tracking-wider font-semibold font-mono uppercase">
+                  {currentTheme.name.replace(" PROTOCOL", "").replace(" TERMINAL", "").replace(" VINTAGE", "").replace(" HORIZON", "")}
+                </span>
+                <div className="flex space-x-1 shrink-0 bg-black/40 px-1.5 py-1 rounded-md border border-white/5">
+                  <span className="w-1.5 h-1.5 rounded-full border border-white/20" style={{ backgroundColor: currentTheme.cyanGlow }} />
+                  <span className="w-1.5 h-1.5 rounded-full border border-white/20" style={{ backgroundColor: currentTheme.purpleGlow }} />
+                </div>
+                <ChevronDown size={11} className="opacity-60 group-hover:rotate-180 transition-transform duration-300" />
+              </button>
+              
+              {/* Dropdown containing selection choices */}
+              <div className="absolute right-0 mt-2 w-48 rounded-lg bg-dark-surface/95 border border-white/10 p-1.5 shadow-xl shadow-black/85 backdrop-blur-md opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 z-50">
+                <div className="px-2 py-1 border-b border-white/5 mb-1 text-[9px] font-mono text-gray-500 uppercase tracking-widest font-bold">
+                  COLOR PORTAL SYSTEM
+                </div>
+                {THEMES.map((theme) => (
+                  <button
+                    key={theme.id}
+                    onClick={() => handleSetTheme(theme)}
+                    className={`w-full text-left px-2 sm:px-2.5 py-1.5 rounded text-[10px] font-mono flex items-center justify-between transition-colors cursor-pointer ${
+                      currentTheme.id === theme.id 
+                        ? "bg-cyan-glow/15 text-white font-bold" 
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <span>{theme.name}</span>
+                    <div className="flex space-x-1 shrink-0">
+                      <span className="w-2 h-2 rounded-full border border-white/20" style={{ backgroundColor: theme.cyanGlow }} />
+                      <span className="w-2 h-2 rounded-full border border-white/20" style={{ backgroundColor: theme.purpleGlow }} />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Soft Sci-Fi Audio Controller */}
+            <button
+              onClick={handleToggleAudio}
+              className={`p-2.5 rounded-lg border font-mono text-xs transition-all duration-300 flex items-center space-x-1.5 cursor-pointer ${
+                isAudioMuted
+                  ? "border-zinc-800 bg-zinc-950/40 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+                  : "border-cyan-glow/20 bg-cyan-glow/5 text-cyan-glow hover:text-white hover:border-cyan-glow hover:shadow-[0_0_10px_rgba(0,240,255,0.15)]"
+              }`}
+              title={isAudioMuted ? "Unmute system voice effects" : "Mute system voice effects"}
+            >
+              {isAudioMuted ? <VolumeX size={14} /> : <Volume2 size={14} className="animate-pulse" />}
+              <span className="hidden xl:inline text-[10px] tracking-wider font-semibold font-mono">
+                {isAudioMuted ? "MUTED" : "SYS_AUDIO"}
+              </span>
+            </button>
+
             <button
               id="ai-agent-nav-trigger"
-              onClick={() => setIsChatOpen(true)}
-              className="px-4 py-2.5 rounded-lg font-mono text-xs font-semibold bg-gradient-to-r from-cyan-glow/10 to-purple-glow/10 border border-cyan-glow/30 hover:border-cyan-glow text-cyan-glow hover:text-white transition-all duration-300 flex items-center space-x-2 cursor-pointer"
+              onClick={() => {
+                cyberAudio.playConfirm();
+                setIsChatOpen(true);
+              }}
+              className="px-3.5 py-2.5 rounded-lg font-mono text-xs font-semibold bg-gradient-to-r from-cyan-glow/10 to-purple-glow/10 border border-cyan-glow/30 hover:border-cyan-glow hover:shadow-[0_0_15px_rgba(0,240,255,0.2)] text-cyan-glow hover:text-white transition-all duration-300 flex items-center space-x-2 cursor-pointer"
             >
-              <Bot size={14} className="animate-pulse" />
+              <Bot size={13} className="animate-pulse" />
               <span>ENGAGE PORTFOLIO AI</span>
             </button>
             <a
-              href="mailto:sandleenbakshi@gmail.com"
-              className="px-4 py-2.5 rounded-lg font-mono text-xs font-semibold bg-white text-dark-bg hover:bg-cyan-glow transition-all duration-300"
+              href="#contact"
+              onClick={() => cyberAudio.playTransition()}
+              className="px-3.5 py-2.5 rounded-lg font-mono text-xs font-semibold bg-white text-dark-bg hover:bg-cyan-glow hover:shadow-[0_0_15px_rgba(0,240,255,0.25)] transition-all duration-300 animate-pulse hover:animate-none"
             >
-              HIRE / INQUIRE
+              HIRE / CONNECT
             </a>
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="lg:hidden flex items-center space-x-2">
+            {/* Mobile Audio Controller (compact) */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={handleToggleAudio}
+              className={`p-2 rounded-lg border transition-all duration-300 flex items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${
+                isAudioMuted
+                  ? "border-zinc-800 bg-zinc-950/40 text-zinc-500"
+                  : "border-cyan-glow/20 bg-cyan-glow/5 text-cyan-glow"
+              }`}
+            >
+              {isAudioMuted ? <VolumeX size={16} /> : <Volume2 size={16} className="animate-pulse" />}
+            </button>
+
+            <button
+              onClick={() => {
+                cyberAudio.playTick();
+                setMobileMenuOpen(!mobileMenuOpen);
+              }}
               className="text-gray-400 hover:text-white focus:outline-none min-h-[44px] min-w-[44px] p-2 flex items-center justify-center transition-colors rounded-lg hover:bg-white/5 cursor-pointer"
               aria-label="Toggle Menu"
             >
@@ -727,39 +1178,207 @@ export default function App() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="md:hidden border-t border-white/5 bg-dark-bg/95 backdrop-blur-md overflow-hidden px-4 py-4 space-y-2.5 flex flex-col font-mono text-sm"
+              className="lg:hidden border-t border-white/5 bg-dark-bg/95 backdrop-blur-md overflow-hidden px-4 py-4 space-y-2.5 flex flex-col font-mono"
             >
+              {/* Mobile Quick Scroll Telemetry Banner */}
+              <div className="flex items-center justify-between pb-2 border-b border-white/5 mb-1.5 font-mono text-[9px] text-zinc-500">
+                <div className="flex items-center space-x-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-glow animate-pulse" />
+                  <span>MATRIX POSITION:</span>
+                  <span className="text-cyan-glow font-bold uppercase">
+                    {activeSection === "trix" ? "TRIX ENGINE (VISUAL)" : 
+                     activeSection === "hero" ? "SYSTEM CORE" : 
+                     activeSection === "projects" ? "SIMULATED WORK" : 
+                     activeSection === "experience" ? "TIMELINE" : 
+                     activeSection === "skills" ? "CAPABILITIES" : 
+                     "CONTACT GATEWAY"}
+                  </span>
+                </div>
+                <span className="text-[8px] text-zinc-600">SYS_LOC_ACC_99%</span>
+              </div>
+
+              {/* Enhanced Interactive Scroll Links */}
+              <a
+                href="#trix"
+                onClick={() => {
+                  cyberAudio.playTransition();
+                  setMobileMenuOpen(false);
+                }}
+                className={`min-h-[46px] px-3 py-2 flex items-center justify-between transition-all border rounded-xl text-xs ${
+                  activeSection === "trix"
+                    ? "text-cyan-glow bg-cyan-glow/5 border-cyan-glow/20 shadow-[0_0_12px_rgba(0,240,255,0.06)] font-bold"
+                    : "text-zinc-400 border-transparent hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-[9px] text-zinc-600 font-mono">01</span>
+                  <span>// TRIX ENGINE</span>
+                </div>
+                {activeSection === "trix" ? (
+                  <span className="text-[8px] font-mono bg-cyan-glow/10 text-cyan-glow border border-cyan-glow/20 px-2 py-0.5 rounded-md uppercase tracking-wider animate-pulse font-bold">
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-[8px] text-zinc-600 font-mono uppercase">Scroll</span>
+                )}
+              </a>
+
               <a
                 href="#hero"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-white min-h-[44px] flex items-center transition-all px-2 hover:bg-white/5 rounded-lg"
+                onClick={() => {
+                  cyberAudio.playTransition();
+                  setMobileMenuOpen(false);
+                }}
+                className={`min-h-[46px] px-3 py-2 flex items-center justify-between transition-all border rounded-xl text-xs ${
+                  activeSection === "hero"
+                    ? "text-cyan-glow bg-cyan-glow/5 border-cyan-glow/20 shadow-[0_0_12px_rgba(0,240,255,0.06)] font-bold"
+                    : "text-zinc-400 border-transparent hover:text-white hover:bg-white/5"
+                }`}
               >
-                // SYSTEM
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-[9px] text-zinc-600 font-mono">02</span>
+                  <span>// SYSTEM CORE</span>
+                </div>
+                {activeSection === "hero" ? (
+                  <span className="text-[8px] font-mono bg-cyan-glow/10 text-cyan-glow border border-cyan-glow/20 px-2 py-0.5 rounded-md uppercase tracking-wider animate-pulse font-bold">
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-[8px] text-zinc-600 font-mono uppercase">Scroll</span>
+                )}
               </a>
+
               <a
                 href="#projects"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-white min-h-[44px] flex items-center transition-all px-2 hover:bg-white/5 rounded-lg"
+                onClick={() => {
+                  cyberAudio.playTransition();
+                  setMobileMenuOpen(false);
+                }}
+                className={`min-h-[46px] px-3 py-2 flex items-center justify-between transition-all border rounded-xl text-xs ${
+                  activeSection === "projects"
+                    ? "text-cyan-glow bg-cyan-glow/5 border-cyan-glow/20 shadow-[0_0_12px_rgba(0,240,255,0.06)] font-bold"
+                    : "text-zinc-400 border-transparent hover:text-white hover:bg-white/5"
+                }`}
               >
-                // SIMULATED-WORK
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-[9px] text-zinc-600 font-mono">03</span>
+                  <span>// SIMULATED WORK</span>
+                </div>
+                {activeSection === "projects" ? (
+                  <span className="text-[8px] font-mono bg-cyan-glow/10 text-cyan-glow border border-cyan-glow/20 px-2 py-0.5 rounded-md uppercase tracking-wider animate-pulse font-bold">
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-[8px] text-zinc-600 font-mono uppercase">Scroll</span>
+                )}
               </a>
+
               <a
                 href="#experience"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-white min-h-[44px] flex items-center transition-all px-2 hover:bg-white/5 rounded-lg"
+                onClick={() => {
+                  cyberAudio.playTransition();
+                  setMobileMenuOpen(false);
+                }}
+                className={`min-h-[46px] px-3 py-2 flex items-center justify-between transition-all border rounded-xl text-xs ${
+                  activeSection === "experience"
+                    ? "text-cyan-glow bg-cyan-glow/5 border-cyan-glow/20 shadow-[0_0_12px_rgba(0,240,255,0.06)] font-bold"
+                    : "text-zinc-400 border-transparent hover:text-white hover:bg-white/5"
+                }`}
               >
-                // TIMELINE
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-[9px] text-zinc-600 font-mono">04</span>
+                  <span>// TIMELINE</span>
+                </div>
+                {activeSection === "experience" ? (
+                  <span className="text-[8px] font-mono bg-cyan-glow/10 text-cyan-glow border border-cyan-glow/20 px-2 py-0.5 rounded-md uppercase tracking-wider animate-pulse font-bold">
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-[8px] text-zinc-600 font-mono uppercase">Scroll</span>
+                )}
               </a>
+
               <a
                 href="#skills"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-white min-h-[44px] flex items-center transition-all px-2 hover:bg-white/5 rounded-lg"
+                onClick={() => {
+                  cyberAudio.playTransition();
+                  setMobileMenuOpen(false);
+                }}
+                className={`min-h-[46px] px-3 py-2 flex items-center justify-between transition-all border rounded-xl text-xs ${
+                  activeSection === "skills"
+                    ? "text-cyan-glow bg-cyan-glow/5 border-cyan-glow/20 shadow-[0_0_12px_rgba(0,240,255,0.06)] font-bold"
+                    : "text-zinc-400 border-transparent hover:text-white hover:bg-white/5"
+                }`}
               >
-                // CAPABILITIES
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-[9px] text-zinc-600 font-mono">05</span>
+                  <span>// CAPABILITIES</span>
+                </div>
+                {activeSection === "skills" ? (
+                  <span className="text-[8px] font-mono bg-cyan-glow/10 text-cyan-glow border border-cyan-glow/20 px-2 py-0.5 rounded-md uppercase tracking-wider animate-pulse font-bold">
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-[8px] text-zinc-600 font-mono uppercase">Scroll</span>
+                )}
               </a>
+
+              <a
+                href="#contact"
+                onClick={() => {
+                  cyberAudio.playTransition();
+                  setMobileMenuOpen(false);
+                }}
+                className={`min-h-[46px] px-3 py-2 flex items-center justify-between transition-all border rounded-xl text-xs ${
+                  activeSection === "contact"
+                    ? "text-cyan-glow bg-cyan-glow/5 border-cyan-glow/20 shadow-[0_0_12px_rgba(0,240,255,0.06)] font-bold"
+                    : "text-zinc-400 border-transparent hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-[9px] text-zinc-600 font-mono">06</span>
+                  <span>// CONTACT GATEWAY</span>
+                </div>
+                {activeSection === "contact" ? (
+                  <span className="text-[8px] font-mono bg-cyan-glow/10 text-cyan-glow border border-cyan-glow/20 px-2 py-0.5 rounded-md uppercase tracking-wider animate-pulse font-bold">
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-[8px] text-zinc-600 font-mono uppercase">Scroll</span>
+                )}
+              </a>
+
+              {/* Dynamic Theme Selection Row */}
+              <div className="border border-white/5 bg-black/40 p-2.5 rounded-xl space-y-2 mt-1">
+                <div className="text-[8px] font-mono text-gray-400 tracking-widest uppercase font-bold px-1 flex items-center justify-between">
+                  <span>SELECT DEVICE MATRIX SCHEMA</span>
+                  <Sliders size={10} className="animate-pulse" />
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {THEMES.map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => handleSetTheme(theme)}
+                      className={`px-2 py-1.5 text-[9px] font-mono border rounded-lg transition-all flex items-center space-x-1.5 justify-between cursor-pointer ${
+                        currentTheme.id === theme.id
+                          ? "text-cyan-glow border-cyan-glow bg-cyan-glow/5 font-bold"
+                          : "text-zinc-500 border-white/5 bg-zinc-950/40 hover:text-white"
+                      }`}
+                    >
+                      <span className="truncate">{theme.name.replace(" PROTOCOL", "").replace(" TERMINAL", "")}</span>
+                      <div className="flex space-x-1 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full border border-white/10" style={{ backgroundColor: theme.cyanGlow }} />
+                        <span className="w-1.5 h-1.5 rounded-full border border-white/10" style={{ backgroundColor: theme.purpleGlow }} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <hr className="border-white/5 my-2" />
               <button
                 onClick={() => {
+                  cyberAudio.playConfirm();
                   setMobileMenuOpen(false);
                   setIsChatOpen(true);
                 }}
@@ -768,10 +1387,11 @@ export default function App() {
                 ENGAGE PORTFOLIO AI
               </button>
               <a
-                href="mailto:sandleenbakshi@gmail.com"
+                href="#contact"
+                onClick={() => setMobileMenuOpen(false)}
                 className="w-full block text-center min-h-[44px] flex items-center justify-center rounded-lg bg-white text-dark-bg text-xs font-semibold"
               >
-                HIRE / INQUIRE
+                HIRE / CONNECT
               </a>
             </motion.div>
           )}
@@ -779,7 +1399,14 @@ export default function App() {
       </header>
 
       {/* Hero Section Container */}
-      <section id="hero" className="relative min-h-[calc(100vh-4rem)] flex items-center py-12 lg:py-20 border-b border-white/5 overflow-hidden">
+      <motion.section
+        id="hero"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={sectionFadeInVariants}
+        className="relative min-h-[calc(100vh-4rem)] flex items-center py-12 lg:py-20 border-b border-white/5 overflow-hidden"
+      >
         
         {/* Background cosmic subtle moving grid or star-field effect */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-dark-bg">
@@ -804,7 +1431,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Hero Left Intro */}
-          <div className="lg:col-span-7 space-y-6">
+          <motion.div className="lg:col-span-7 space-y-6" variants={sectionItemFadeInVariants}>
             <div className="inline-flex items-center space-x-2 text-cyan-glow bg-cyan-glow/5 border border-cyan-glow/15 px-3 py-1.5 rounded-lg text-xs font-mono">
               <Sparkles size={13} className="animate-spin-slow text-cyan-glow" />
               <span className="uppercase tracking-widest font-semibold text-cyan-glow">INTELLIGENT CORES</span>
@@ -829,9 +1456,9 @@ export default function App() {
             </div>
 
             <p className="text-base text-gray-400 max-w-xl leading-relaxed">
-              Pioneering mathematical simulations, machine learning pipelines, and full-stack web architectures. 
-              My technical focus spans embedded inverse-kinematics algorithms, ROS2 systems telemetry diagnosis, 
-              polymorphic symmetrical ciphers, and robust microservices dashboards that scale gracefully. 
+              I am an AI-powered full-stack developer with over 3 years of experience in remote work and creative digital services. 
+              My expertise centers on building automated AI systems, cloud-native applications, and scaled web platforms using Next.js 15, FastAPI, Docker, and Kubernetes. 
+              I unite robust design thinking with state-of-the-art AI/DevOps solutions, delivering top-tier presentation layouts and interactive software.
             </p>
 
             {/* Call to Action Group */}
@@ -871,10 +1498,10 @@ export default function App() {
                 <div className="text-xs font-mono text-gray-500 uppercase tracking-wider">System Integration</div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Hero Right Visual Column - Advanced WebGL Viewport */}
-          <div className="lg:col-span-5 h-[32rem] relative flex items-center justify-center">
+          {/* Hero Right Visual Column - Advanced WebGL Viewport (Trix Target) */}
+          <motion.div id="trix" className="lg:col-span-5 h-[32rem] relative flex items-center justify-center scroll-mt-24" variants={sectionItemFadeInVariants}>
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-glow/[0.015] to-purple-glow/[0.015] rounded-3xl border border-white/5 glass-panel flex flex-col p-4 sm:p-5 overflow-hidden">
               
               {/* Card headers */}
@@ -888,7 +1515,7 @@ export default function App() {
 
               {/* Central WebGL Viewport Projection display */}
               <div className="flex-1 my-3 flex flex-col justify-center items-center relative rounded-2xl overflow-hidden bg-black/20 border border-white/[0.02]">
-                {isMobile ? <MobileHeroSvg /> : <ThreeCenterpiece />}
+                {isMobile ? <MobileHeroSvg /> : <ThreeCenterpiece cyanColor={currentTheme.cyanGlow} purpleColor={currentTheme.purpleGlow} />}
               </div>
 
               {/* Vector credentials details footer */}
@@ -907,15 +1534,22 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Interactive Simulated Work Section */}
-      <section id="projects" className="py-20 lg:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-white/5">
+      <motion.section
+        id="projects"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={sectionFadeInVariants}
+        className="py-20 lg:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-white/5"
+      >
         
         {/* Section Heading */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16">
+        <motion.div className="flex flex-col md:flex-row md:items-end justify-between mb-16" variants={sectionItemFadeInVariants}>
           <div className="space-y-3">
             <div className="inline-flex items-center space-x-1.5 text-xs font-mono text-purple-glow uppercase tracking-widest">
               <span className="w-1.5 h-1.5 bg-purple-glow rounded-full"></span>
@@ -929,17 +1563,26 @@ export default function App() {
               interactive progress models, and digital creative designs. Hover and click to test them.
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* 3D Cards container */}
-        <FeaturedProjects />
-      </section>
+        <motion.div variants={sectionItemFadeInVariants}>
+          <FeaturedProjects />
+        </motion.div>
+      </motion.section>
 
       {/* Sleek Timeline Experience & Education Section */}
-      <section id="experience" className="py-20 lg:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-white/5">
+      <motion.section
+        id="experience"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={sectionFadeInVariants}
+        className="py-20 lg:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-white/5"
+      >
         
         {/* Section Heading */}
-        <div className="text-center space-y-3 mb-16">
+        <motion.div className="text-center space-y-3 mb-16" variants={sectionItemFadeInVariants}>
           <div className="inline-flex items-center space-x-1.5 text-xs font-mono text-cyan-glow uppercase tracking-widest">
             <Layers size={13} className="text-cyan-glow shrink-0 animate-pulse" />
             <span>Structured Path</span>
@@ -951,7 +1594,7 @@ export default function App() {
             Proven tracking path across full-stack development, agentic workflow automation design, 
             creative freelance consulting, and structured IT certifications.
           </p>
-        </div>
+        </motion.div>
 
         {/* 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
@@ -966,15 +1609,48 @@ export default function App() {
             <div className="relative pl-6 sm:pl-8 border-l border-zinc-800 space-y-10">
               {experiences.map((exp, idx) => {
                 return (
-                  <div key={exp.id} className="relative group">
+                  <motion.div 
+                    key={exp.id} 
+                    className="relative group"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: false, margin: "-100px 0px -100px 0px" }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    variants={{
+                      hidden: { opacity: 0.4 },
+                      visible: { opacity: 1 }
+                    }}
+                  >
                     
                     {/* Visual Connector Dot */}
-                    <div className="absolute -left-[31px] sm:-left-[39px] top-1.5 w-4 h-4 rounded-full bg-dark-bg border-2 border-zinc-700 group-hover:border-cyan-glow transition-all duration-300 flex items-center justify-center z-10">
-                      <div className={`w-1.5 h-1.5 rounded-full ${idx === 0 ? "bg-cyan-glow animate-ping" : "bg-zinc-700 group-hover:bg-cyan-glow"}`} />
-                    </div>
+                    <motion.div 
+                      variants={{
+                        hidden: { scale: 0.9, borderColor: "rgb(39, 39, 42)" },
+                        visible: { scale: 1.15, borderColor: "rgba(0, 240, 255, 0.8)" }
+                      }}
+                      className="absolute -left-[31px] sm:-left-[39px] top-1.5 w-4 h-4 rounded-full bg-dark-bg border-2 transition-all duration-300 flex items-center justify-center z-10"
+                    >
+                      <div className={`w-1.5 h-1.5 rounded-full ${idx === 0 ? "bg-cyan-glow animate-ping" : "bg-zinc-700"}`} />
+                    </motion.div>
 
-                    {/* Event Card (Glassmorphic) */}
-                    <div className="glass-panel rounded-xl p-6 transition-all duration-300 border border-white/5 hover:border-white/10">
+                    {/* Event Card (Glassmorphic) with scroll state-driven light glow and expansion */}
+                    <motion.div 
+                      variants={{
+                        hidden: { 
+                          scale: 0.96, 
+                          borderColor: "rgba(255, 255, 255, 0.05)",
+                          backgroundColor: "rgba(10, 10, 10, 0.3)",
+                          boxShadow: "0 0 0px rgba(0, 240, 255, 0)"
+                        },
+                        visible: { 
+                          scale: 1, 
+                          borderColor: "rgba(0, 240, 255, 0.22)",
+                          backgroundColor: "rgba(0, 240, 255, 0.02)",
+                          boxShadow: "0 10px 30px -10px rgba(0, 240, 255, 0.08)"
+                        }
+                      }}
+                      className="glass-panel rounded-xl p-6 border transition-all duration-500 hover:border-cyan-glow/40 hover:shadow-[0_0_30px_rgba(0,240,255,0.18)]"
+                    >
                       
                       {/* Header metadata */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3 mb-4 font-mono">
@@ -1013,15 +1689,15 @@ export default function App() {
                         ))}
                       </div>
 
-                    </div>
-                  </div>
+                    </motion.div>
+                  </motion.div>
                 );
               })}
             </div>
           </div>
 
           {/* Column 2: Academics & Certificates (Right 5 Columns) */}
-          <div className="lg:col-span-5 space-y-8">
+          <motion.div className="lg:col-span-5 space-y-8" variants={sectionItemFadeInVariants}>
             
             {/* Academic Section */}
             <div>
@@ -1032,18 +1708,42 @@ export default function App() {
 
               <div className="space-y-4">
                 {/* School 1 */}
-                <div className="glass-panel border border-white/5 rounded-xl p-5 hover:border-purple-glow/20 transition-all duration-300">
+                <motion.div 
+                  initial={{ opacity: 0.4, scale: 0.96, borderColor: "rgba(255, 255, 255, 0.05)", backgroundColor: "rgba(10, 10, 10, 0.3)", boxShadow: "0 0 0px rgba(0, 0, 0, 0)" }}
+                  whileInView={{ 
+                    opacity: 1, 
+                    scale: 1, 
+                    borderColor: "rgba(168, 85, 247, 0.22)", 
+                    backgroundColor: "rgba(168, 85, 247, 0.015)",
+                    boxShadow: "0 10px 30px -10px rgba(168, 85, 247, 0.08)" 
+                  }}
+                  viewport={{ once: false, margin: "-100px 0px -100px 0px" }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="glass-panel border rounded-xl p-5 hover:border-purple-glow/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] transition-all duration-350"
+                >
                   <div className="font-mono text-[9px] text-purple-glow uppercase tracking-wider mb-1">Karachi Secondary Board</div>
                   <h4 className="text-md font-display font-medium text-white mb-0.5">Intermediate in Commerce</h4>
                   <p className="text-xs text-gray-400 font-mono">Degree Girls College, Buffer Zone</p>
-                </div>
+                </motion.div>
 
                 {/* School 2 */}
-                <div className="glass-panel border border-white/5 rounded-xl p-5 hover:border-purple-glow/20 transition-all duration-300">
+                <motion.div 
+                  initial={{ opacity: 0.4, scale: 0.96, borderColor: "rgba(255, 255, 255, 0.05)", backgroundColor: "rgba(10, 10, 10, 0.3)", boxShadow: "0 0 0px rgba(0, 0, 0, 0)" }}
+                  whileInView={{ 
+                    opacity: 1, 
+                    scale: 1, 
+                    borderColor: "rgba(168, 85, 247, 0.22)", 
+                    backgroundColor: "rgba(168, 85, 247, 0.015)",
+                    boxShadow: "0 10px 30px -10px rgba(168, 85, 247, 0.08)" 
+                  }}
+                  viewport={{ once: false, margin: "-100px 0px -100px 0px" }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="glass-panel border rounded-xl p-5 hover:border-purple-glow/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] transition-all duration-350"
+                >
                   <div className="font-mono text-[9px] text-purple-glow uppercase tracking-wider mb-1">Karachi Matriculation Board</div>
                   <h4 className="text-md font-display font-medium text-white mb-0.5">Matriculation in Science</h4>
                   <p className="text-xs text-gray-400 font-mono">Falcon House Grammar School (C-3)</p>
-                </div>
+                </motion.div>
               </div>
             </div>
 
@@ -1056,7 +1756,19 @@ export default function App() {
 
               <div className="space-y-4">
                 {/* Cert 1 */}
-                <div className="glass-panel border border-white/5 rounded-xl p-5 hover:border-amber-500/20 transition-all duration-300 flex justify-between gap-4">
+                <motion.div 
+                  initial={{ opacity: 0.4, scale: 0.96, borderColor: "rgba(255, 255, 255, 0.05)", backgroundColor: "rgba(10, 10, 10, 0.3)", boxShadow: "0 0 0px rgba(0, 0, 0, 0)" }}
+                  whileInView={{ 
+                    opacity: 1, 
+                    scale: 1, 
+                    borderColor: "rgba(245, 158, 11, 0.22)", 
+                    backgroundColor: "rgba(245, 158, 11, 0.015)",
+                    boxShadow: "0 10px 30px -10px rgba(245, 158, 11, 0.08)" 
+                  }}
+                  viewport={{ once: false, margin: "-100px 0px -100px 0px" }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="glass-panel border rounded-xl p-5 hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)] transition-all duration-350 flex justify-between gap-4"
+                >
                   <div className="space-y-1">
                     <h4 className="text-xs font-mono font-bold text-amber-400 tracking-wider">AGENTIC AI ENGINEERING</h4>
                     <p className="text-sm font-semibold text-white leading-tight">Governor Sindh Initiative</p>
@@ -1065,10 +1777,22 @@ export default function App() {
                   <div className="text-[9px] font-mono text-gray-500 bg-white/2 border border-white/5 rounded px-2 py-0.5 h-fit self-start shrink-0">
                     2023 - Pres.
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Cert 2 */}
-                <div className="glass-panel border border-white/5 rounded-xl p-5 hover:border-amber-500/20 transition-all duration-300 flex justify-between gap-4">
+                <motion.div 
+                  initial={{ opacity: 0.4, scale: 0.96, borderColor: "rgba(255, 255, 255, 0.05)", backgroundColor: "rgba(10, 10, 10, 0.3)", boxShadow: "0 0 0px rgba(0, 0, 0, 0)" }}
+                  whileInView={{ 
+                    opacity: 1, 
+                    scale: 1, 
+                    borderColor: "rgba(245, 158, 11, 0.22)", 
+                    backgroundColor: "rgba(245, 158, 11, 0.015)",
+                    boxShadow: "0 10px 30px -10px rgba(245, 158, 11, 0.08)" 
+                  }}
+                  viewport={{ once: false, margin: "-100px 0px -100px 0px" }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="glass-panel border rounded-xl p-5 hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)] transition-all duration-350 flex justify-between gap-4"
+                >
                   <div className="space-y-1">
                     <h4 className="text-xs font-mono font-bold text-amber-400 tracking-wider">WEB DEV & FREELANCING</h4>
                     <p className="text-sm font-semibold text-white leading-tight">Bano Qabil IT Initiative</p>
@@ -1077,10 +1801,22 @@ export default function App() {
                   <div className="text-[9px] font-mono text-gray-500 bg-white/2 border border-white/5 rounded px-2 py-0.5 h-fit self-start shrink-0">
                     Completed
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Cert 3 */}
-                <div className="glass-panel border border-white/5 rounded-xl p-5 hover:border-amber-500/20 transition-all duration-300 flex justify-between gap-4">
+                <motion.div 
+                  initial={{ opacity: 0.4, scale: 0.96, borderColor: "rgba(255, 255, 255, 0.05)", backgroundColor: "rgba(10, 10, 10, 0.3)", boxShadow: "0 0 0px rgba(0, 0, 0, 0)" }}
+                  whileInView={{ 
+                    opacity: 1, 
+                    scale: 1, 
+                    borderColor: "rgba(245, 158, 11, 0.22)", 
+                    backgroundColor: "rgba(245, 158, 11, 0.015)",
+                    boxShadow: "0 10px 30px -10px rgba(245, 158, 11, 0.08)" 
+                  }}
+                  viewport={{ once: false, margin: "-100px 0px -100px 0px" }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="glass-panel border rounded-xl p-5 hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)] transition-all duration-350 flex justify-between gap-4"
+                >
                   <div className="space-y-1">
                     <h4 className="text-xs font-mono font-bold text-amber-400 tracking-wider">PRESENTATION DESIGN (CIT)</h4>
                     <p className="text-sm font-semibold text-white leading-tight">Presentation & Graphics Design</p>
@@ -1089,20 +1825,50 @@ export default function App() {
                   <div className="text-[9px] font-mono text-gray-500 bg-white/2 border border-white/5 rounded px-2 py-0.5 h-fit self-start shrink-0">
                     CIT Short
                   </div>
-                </div>
+                </motion.div>
               </div>
             </div>
 
-          </div>
+          </motion.div>
 
         </div>
-      </section>
+
+        {/* Dynamic Glassmorphic Download CV CTA Banner */}
+        <motion.div 
+          variants={sectionItemFadeInVariants}
+          className="mt-14 pt-10 border-t border-white/[0.04] flex flex-col items-center justify-center text-center space-y-4"
+        >
+          <p className="text-gray-400 font-mono text-[11px] sm:text-xs tracking-wider uppercase">
+            Need a portable offline copy of Sandleen's professional layout?
+          </p>
+          <button
+            onClick={handleDownloadCV}
+            className="group relative cursor-pointer flex items-center gap-3 px-6 sm:px-8 py-4 border border-white/10 bg-zinc-950/40 backdrop-blur-md rounded-xl hover:bg-zinc-900/40 hover:border-cyan-glow/45 hover:shadow-[0_0_20px_rgba(0,240,255,0.15)] active:scale-[0.98] transition-all duration-300 font-mono text-xs sm:text-sm text-gray-300 hover:text-white"
+          >
+            {/* Animated Laser Gradient Beam Sweep Effect */}
+            <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+              <div className="absolute -inset-full bg-gradient-to-r from-transparent via-cyan-glow/10 to-transparent rotate-3 transition-transform duration-1000 group-hover:translate-x-full" />
+            </div>
+
+            <Download size={14} className="text-cyan-glow group-hover:animate-bounce shrink-0" />
+            <span className="font-bold tracking-wider uppercase">Download CV (Structured Sheet)</span>
+            <span className="text-[10px] text-zinc-500 font-normal">PDF • 320 KB</span>
+          </button>
+        </motion.div>
+      </motion.section>
 
       {/* Technical Capabilities Bento Grid */}
-      <section id="skills" className="py-20 lg:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-white/5">
+      <motion.section
+        id="skills"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={sectionFadeInVariants}
+        className="py-20 lg:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-white/5"
+      >
         
         {/* Section Heading */}
-        <div className="text-center space-y-3 mb-16">
+        <motion.div className="text-center space-y-3 mb-16" variants={sectionItemFadeInVariants}>
           <div className="inline-flex items-center space-x-1.5 text-xs font-mono text-purple-glow uppercase tracking-widest">
             <Zap size={13} className="text-purple-glow shrink-0 animate-pulse" />
             <span>Core Ecosystem</span>
@@ -1113,18 +1879,56 @@ export default function App() {
           <p className="text-gray-400 max-w-xl mx-auto text-sm">
             Categorized overview of engineering modules, agentic workflows, scalable stacks, deployment pipelines, and custom asset layouts.
           </p>
-        </div>
+        </motion.div>
 
         {/* Bento Grid */}
-        <TechStackBento />
-      </section>
+        <motion.div variants={sectionItemFadeInVariants}>
+          <TechStackBento />
+        </motion.div>
+      </motion.section>
+
+      {/* Dynamic Terminal-Themed Secure Courier Contact System */}
+      <motion.section
+        id="contact"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={sectionFadeInVariants}
+        className="py-20 lg:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-white/5"
+      >
+        {/* Section Heading */}
+        <motion.div className="text-center space-y-3 mb-16" variants={sectionItemFadeInVariants}>
+          <div className="inline-flex items-center space-x-1.5 text-xs font-mono text-cyan-glow uppercase tracking-widest">
+            <Send size={13} className="text-cyan-glow shrink-0 animate-pulse" />
+            <span>TRANSMIT COURIER</span>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-display font-medium text-white tracking-tight">
+            Secure Feedback Router
+          </h2>
+          <p className="text-gray-400 max-w-xl mx-auto text-sm">
+            Configure direct communications, send project telemetry templates, or sync with remote agents.
+          </p>
+        </motion.div>
+
+        <motion.div variants={sectionItemFadeInVariants}>
+          <ContactSection onOpenChat={() => setIsChatOpen(true)} />
+        </motion.div>
+      </motion.section>
 
       {/* Modern, non-obtrusive dynamic footer */}
       <footer className="py-12 border-t border-white/5 bg-zinc-950/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-gray-500">
-          <div className="text-center md:text-left space-y-1">
-            <span className="text-gray-400 font-display font-bold text-sm block">Sandleen Waseem</span>
-            <span>© {new Date().getFullYear()} • AI-Powered Full-Stack Developer & Creative Technologist.</span>
+          <div className="flex items-center space-x-3 select-none">
+            <div className="relative w-8 h-8 rounded-lg bg-zinc-950 border border-white/5 flex items-center justify-center overflow-hidden shrink-0">
+              <svg className="w-5.5 h-5.5 text-cyan-glow" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 5 L89 27.5 L89 72.5 L50 95 L11 72.5 L11 27.5 Z" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="50" cy="50" r="5" fill="#00f0ff" />
+              </svg>
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-mono font-bold text-xs text-white">SANDLEEN.WASEEM</span>
+              <span className="text-[9px] font-mono text-gray-500">SYSTEM GATEWAY © {new Date().getFullYear()}</span>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-4 justify-center">
@@ -1189,7 +1993,7 @@ export default function App() {
             <div className="bg-gradient-to-r from-cyan-glow/5 to-purple-glow/5 border-b border-white/5 px-4 py-2 flex items-start space-x-2 shrink-0">
               <Info size={13} className="text-cyan-glow shrink-0 mt-0.5" />
               <p className="text-[10px] text-gray-400 font-mono leading-normal">
-                Ask about ROS2 metrics, embedded design, key ciphers, or consulting options. Direct telemetry is proxied back safely.
+                Ask about AI Agentic workflows, n8n automations, Next.js 15 full-stack design, or remote project coordination. Direct telemetry is proxied back safely.
               </p>
             </div>
 
@@ -1225,40 +2029,30 @@ export default function App() {
                 );
               })}
 
-              {isAiTyping && (
-                <div className="flex items-start space-x-2">
-                  <div className="w-6 h-6 rounded bg-purple-glow/10 border border-purple-glow/20 flex items-center justify-center shrink-0 animate-pulse">
-                    <Bot size={12} className="text-purple-glow" />
-                  </div>
-                  <div className="rounded-xl px-3.5 py-2.5 text-xs bg-zinc-950/60 text-gray-500 border border-white/5 font-mono flex items-center space-x-1 animate-pulse">
-                    <span>Routing signals</span>
-                    <span className="w-1 h-3 bg-cyan-glow animate-ping"></span>
-                  </div>
-                </div>
-              )}
+              {isAiTyping && <TypingIndicator />}
               
               <div ref={chatBottomRef} />
             </div>
 
             {/* Quick Prompts list panel with enhanced sizing */}
-            <div className="bg-zinc-950 p-2 border-t border-white/5 flex flex-wrap gap-1.5 shrink-0 max-h-20 overflow-y-auto">
+            <div className="bg-zinc-950 p-2 border-t border-white/5 flex flex-wrap gap-1.5 shrink-0 max-h-20 overflow-y-auto w-full">
               <button
-                onClick={() => executeQuickPrompt("What is Sandleen's experience with ROS2?")}
-                className="text-[9px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-cyan-glow/30 text-gray-400 hover:text-white px-2.5 py-1.5 min-h-[32px] rounded-lg transition-colors cursor-pointer"
+                onClick={() => executeQuickPrompt("What is Sandleen's experience with n8n and AI Automation?")}
+                className="text-[9px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-cyan-glow/30 text-gray-400 hover:text-white px-2.5 py-1.5 min-h-[32px] rounded-lg transition-colors cursor-pointer flex-1 text-center truncate"
               >
-                ROS2 & Robotics Exp?
+                AI & n8n Automation?
               </button>
               <button
-                onClick={() => executeQuickPrompt("Tell me about the dynamic joint simulator.")}
-                className="text-[9px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-purple-glow/30 text-gray-400 hover:text-white px-2.5 py-1.5 min-h-[32px] rounded-lg transition-colors cursor-pointer"
+                onClick={() => executeQuickPrompt("Tell me about Sandleen's full-stack web capabilities.")}
+                className="text-[9px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-purple-glow/30 text-gray-400 hover:text-white px-2.5 py-1.5 min-h-[32px] rounded-lg transition-colors cursor-pointer flex-1 text-center truncate"
               >
-                About the Joint Sim?
+                Full-Stack Expertise?
               </button>
               <button
-                onClick={() => executeQuickPrompt("What is the HexArmor encryption system?")}
-                className="text-[9px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-cyan-glow/30 text-gray-400 hover:text-white px-2.5 py-1.5 min-h-[32px] rounded-lg transition-colors cursor-pointer"
+                onClick={() => executeQuickPrompt("What are Sandleen's design and presentation skills?")}
+                className="text-[9px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-cyan-glow/30 text-gray-400 hover:text-white px-2.5 py-1.5 min-h-[32px] rounded-lg transition-colors cursor-pointer flex-1 text-center truncate"
               >
-                What is HexArmor?
+                Creative & Branding?
               </button>
             </div>
 
@@ -1285,6 +2079,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      <FloatingTerminal />
     </div>
   );
 }

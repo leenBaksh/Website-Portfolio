@@ -23,6 +23,7 @@ import {
   Compass 
 } from "lucide-react";
 import TiltCard from "./TiltCard";
+import { cyberAudio } from "../utils/audio";
 
 export default function FeaturedProjects() {
   // Card 1: 3D Book Flip Animation States
@@ -35,6 +36,7 @@ export default function FeaturedProjects() {
   const [securityLevel, setSecurityLevel] = useState("Maximum");
 
   const handleEncrypt = () => {
+    cyberAudio.playConfirm();
     // Generate a quick cipher string for live feedback
     const arr = Array.from(encryptInput).map((c) => 
       String.fromCharCode(c.charCodeAt(0) + 3)
@@ -52,6 +54,7 @@ export default function FeaturedProjects() {
   const [streak, setStreak] = useState(14);
 
   const toggleHabit = (id: number) => {
+    cyberAudio.playClick();
     setHabits(habits.map(h => h.id === id ? { ...h, completed: !h.completed } : h));
   };
 
@@ -66,14 +69,14 @@ export default function FeaturedProjects() {
     {
       title: "Digital Planner Design",
       sub: "Creative Planners & Organizers",
-      accent: "#00f0ff",
+      accent: "#02e5c8",
       gradient: "from-cyan-glow/20 to-zinc-900",
       stats: { reach: "Budget & Goals", conv: "Canva Models", uptime: "100% Done" }
     },
     {
       title: "Vector Merchandise Assets",
       sub: "T-Shirts, Pillows & Mobile/Book Covers",
-      accent: "#b026ff",
+      accent: "#9d4edd",
       gradient: "from-purple-glow/20 to-zinc-900",
       stats: { reach: "Custom Art", conv: "Print Ready", uptime: "100% Quality" }
     },
@@ -92,9 +95,11 @@ export default function FeaturedProjects() {
   
   const handleCalcClick = (btn: string) => {
     if (btn === "C") {
+      cyberAudio.playClick();
       setCalcVal("");
       setCalcHistory("");
     } else if (btn === "=") {
+      cyberAudio.playConfirm();
       try {
         // Simple evaluation safely for specific calculator buttons representation
         // eslint-disable-next-line no-eval
@@ -105,6 +110,7 @@ export default function FeaturedProjects() {
         setCalcVal("ERROR");
       }
     } else {
+      cyberAudio.playTick();
       setCalcVal(prev => prev === "0" || prev === "137.4" ? btn : prev + btn);
     }
   };
@@ -167,9 +173,15 @@ export default function FeaturedProjects() {
               {/* 3D BOOK-FLIP INTERACTIVE WORKSPACE */}
               <div 
                 className="my-5 h-56 bg-black/40 border border-white/[0.04] rounded-2xl flex items-center justify-center relative cursor-pointer group/book overflow-hidden"
-                onMouseEnter={() => setBookOpened(true)}
+                onMouseEnter={() => {
+                  cyberAudio.playTick();
+                  setBookOpened(true);
+                }}
                 onMouseLeave={() => setBookOpened(false)}
-                onClick={() => setBookOpened(!bookOpened)}
+                onClick={() => {
+                  cyberAudio.playClick();
+                  setBookOpened(!bookOpened);
+                }}
               >
                 {/* Instruction Indicator overlay */}
                 <div className="absolute top-2.5 right-3 text-[9px] font-mono text-cyan-glow/60 bg-black/40 px-2 py-0.5 rounded border border-white/5 flex items-center gap-1 pointer-events-none">
@@ -259,7 +271,10 @@ export default function FeaturedProjects() {
                   <span>GitHub Repository</span>
                 </a>
                 <button 
-                  onClick={() => setBookOpened(!bookOpened)}
+                  onClick={() => {
+                    cyberAudio.playClick();
+                    setBookOpened(!bookOpened);
+                  }}
                   className="flex-1 py-2 rounded-lg bg-cyan-glow text-dark-bg font-mono text-[11px] font-bold text-center flex items-center justify-center gap-1.5 hover:shadow-[0_0_15px_rgba(0,240,255,0.4)] transition-all"
                 >
                   <ExternalLink size={12} />
@@ -277,7 +292,7 @@ export default function FeaturedProjects() {
             
             {/* Laser scanning beam */}
             {isScanning && (
-              <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-glow to-transparent shadow-[0_0_20px_#00f0ff] animate-[pulse_1.5s_infinite] pointer-events-none"
+              <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-glow to-transparent shadow-[0_0_20px_#02e5c8] animate-[pulse_1.5s_infinite] pointer-events-none"
                    style={{
                      animationName: "grid-drift",
                      animationDuration: "4s",
@@ -584,7 +599,10 @@ export default function FeaturedProjects() {
                   {brandingCampaigns.map((_, idx) => (
                     <button
                       key={idx}
-                      onClick={() => setActiveAdIndex(idx)}
+                      onClick={() => {
+                        cyberAudio.playTick();
+                        setActiveAdIndex(idx);
+                      }}
                       className={`w-6 h-1 rounded-full transition-all duration-200 ${
                         activeAdIndex === idx ? "bg-cyan-glow" : "bg-zinc-800 hover:bg-zinc-700"
                       }`}
@@ -608,7 +626,10 @@ export default function FeaturedProjects() {
                   <span>GitHub</span>
                 </a>
                 <button 
-                  onClick={() => setActiveAdIndex(prev => (prev + 1) % brandingCampaigns.length)}
+                  onClick={() => {
+                    cyberAudio.playClick();
+                    setActiveAdIndex(prev => (prev + 1) % brandingCampaigns.length);
+                  }}
                   className="flex-1 py-1.5 rounded-lg bg-cyan-glow text-dark-bg font-mono text-[10px] font-bold text-center flex items-center justify-center gap-1 hover:shadow-[0_0_15px_rgba(0,240,255,0.4)] transition-all"
                 >
                   <ExternalLink size={11} />

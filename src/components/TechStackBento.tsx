@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { motion } from "motion/react";
+import React, { useState, useRef, useEffect } from "react";
+import { motion, useScroll, useTransform, useSpring } from "motion/react";
 import { 
   Cpu, 
   Sparkles, 
@@ -38,6 +38,29 @@ interface Category {
 
 export default function TechStackBento() {
   const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const bentoRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: bentoRef,
+    offset: ["start end", "end start"]
+  });
+
+  const springConfig = { damping: 28, stiffness: 85, mass: 0.15 };
+
+  const y0 = useSpring(useTransform(scrollYProgress, [0, 1], isMobile ? [0, 0] : [35, -40]), springConfig);
+  const y1 = useSpring(useTransform(scrollYProgress, [0, 1], isMobile ? [0, 0] : [-15, 20]), springConfig);
+  const y2 = useSpring(useTransform(scrollYProgress, [0, 1], isMobile ? [0, 0] : [25, -30]), springConfig);
+  const y3 = useSpring(useTransform(scrollYProgress, [0, 1], isMobile ? [0, 0] : [-20, 15]), springConfig);
+
+  const parallaxY = [y0, y1, y2, y3];
 
   const categories: Category[] = [
     {
@@ -250,6 +273,7 @@ export default function TechStackBento() {
 
       {/* Bento Grid */}
       <motion.div 
+        ref={bentoRef}
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
@@ -257,12 +281,14 @@ export default function TechStackBento() {
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6"
       >
         
-        {categories.map((category) => {
+        {categories.map((category, idx) => {
           const CatIcon = category.icon;
+          const catY = parallaxY[idx % parallaxY.length];
           return (
             <motion.div
               key={category.id}
               variants={itemVariants}
+              style={{ y: catY }}
               className={`${category.colSpanClass} bg-gradient-to-b from-zinc-900/90 to-zinc-950/95 border border-white/5 hover:border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 group hover:shadow-[0_10px_35px_rgba(0,240,255,0.03)] h-full`}
             >
               <div className="space-y-6">
