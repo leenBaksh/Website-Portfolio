@@ -288,7 +288,10 @@ export default function FeaturedProjects() {
 
         {/* ========= CARD 2: Secure Data Encryption System (3 Columns) ========= */}
         <div className="lg:col-span-3 flex flex-col">
-          <TiltCard className="flex-1 bg-gradient-to-br from-zinc-900/90 to-zinc-950 border border-white/5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group h-full">
+          <TiltCard 
+            hoverScale={1.06}
+            className="flex-1 bg-gradient-to-br from-zinc-900/90 to-zinc-950 hexarmor-gradient-border rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group h-full"
+          >
             
             {/* Laser scanning beam */}
             {isScanning && (

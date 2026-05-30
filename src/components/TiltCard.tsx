@@ -1,12 +1,13 @@
 import React, { useRef, useState } from "react";
 
-interface TiltCardProps {
+interface TiltCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   id?: string;
+  hoverScale?: number;
 }
 
-export default function TiltCard({ children, className = "", id }: TiltCardProps) {
+export default function TiltCard({ children, className = "", id, hoverScale = 1.03, ...props }: TiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
   const [shadow, setShadow] = useState("rgba(0, 0, 0, 0.4) 0px 4px 20px");
@@ -28,8 +29,8 @@ export default function TiltCard({ children, className = "", id }: TiltCardProps
     const rotateX = Math.min(12, Math.max(-12, -(y - centerY) / (centerY / 10)));
     const rotateY = Math.min(12, Math.max(-12, (x - centerX) / (centerX / 10)));
     
-    // Update transformation string
-    setTransform(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.03, 1.03, 1.03)`);
+    // Update transformation string with customizable hoverScale
+    setTransform(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(${hoverScale}, ${hoverScale}, ${hoverScale})`);
     
     // Dynamic overlay glare/shadow shift
     const shadowX = -(x - centerX) / 6;
@@ -44,6 +45,7 @@ export default function TiltCard({ children, className = "", id }: TiltCardProps
 
   return (
     <div
+      {...props}
       ref={cardRef}
       id={id}
       onMouseMove={handleMouseMove}
