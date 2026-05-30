@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
@@ -35,7 +34,7 @@ BACKGROUND DETAILS:
 - Title: AI-powered Full-Stack Developer & Agentic Automation Engineer
 - Email: sandleenbakshi@gmail.com
 - Phone: +923103871019
-- Location: Gulshan-e-Usman, North Karachi, Pakistan
+- Location: Karachi, Pakistan
 - LinkedIn: linkedin.com/in/sandaleen-waseem-a51200266
 - GitHub: https://github.com/leenBaksh
 - Core Values: Intelligent automation, full-stack cloud scaling, design thinking, teamwork, storytelling, and rapid iteration.
@@ -176,6 +175,7 @@ app.post("/api/chat", async (req, res) => {
 const startServer = async () => {
   if (process.env.NODE_ENV !== "production") {
     console.log("Starting server in development mode with Vite...");
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",

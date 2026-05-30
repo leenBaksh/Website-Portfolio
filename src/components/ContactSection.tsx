@@ -220,7 +220,7 @@ export default function ContactSection({ onOpenChat }: ContactSectionProps) {
                 </div>
                 <div>
                   <h4 className="text-[10px] uppercase font-mono text-gray-500 tracking-wider">GEOLOCATION ROUTE</h4>
-                  <p className="text-sm font-semibold text-white leading-tight">Gulshan-e-Usman, North Karachi, Pakistan</p>
+                  <p className="text-sm font-semibold text-white leading-tight">Karachi, Pakistan</p>
                 </div>
               </div>
 
